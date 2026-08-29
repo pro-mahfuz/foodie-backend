@@ -1,0 +1,10 @@
+target/
+.idea/
+.vscode/
+*.iml
+.env
+.tools/
+.m2-cache/
+.maven-*.zip
+.foodie-api.pid
+foodie-api*.log
