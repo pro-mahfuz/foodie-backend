@@ -39,7 +39,7 @@ pipeline {
 
   post {
     success {
-      echo 'Build and deployment completed successfully.'
+      echo 'Build and deployment completed successfully 1.'
     }
     failure {
       echo 'Build or deployment failed. The existing deployment was preserved where possible.'
