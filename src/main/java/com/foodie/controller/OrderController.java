@@ -1,3 +1,0 @@
-package com.foodie.controller;
-import com.foodie.dto.ApiDtos.*; import com.foodie.service.OrderService; import jakarta.validation.Valid; import org.springframework.http.*; import org.springframework.web.bind.annotation.*;
-@RestController @RequestMapping("/api/orders") public class OrderController {private final OrderService service;public OrderController(OrderService s){service=s;}@PostMapping ResponseEntity<OrderView> create(@Valid @RequestBody CreateOrderRequest r){return ResponseEntity.status(HttpStatus.CREATED).body(service.create(r));}@GetMapping("/{id}") OrderView get(@PathVariable Long id){return service.get(id);}}

@@ -1,0 +1,1 @@
+package com.foodie.order;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;interface OrderRepository extends JpaRepository<CustomerOrder,Long>{}interface CartRepository extends JpaRepository<CartItem,Long>{List<CartItem> findByCustomerId(Long id);Optional<CartItem> findByCustomerIdAndDishId(Long c,Long d);void deleteByCustomerId(Long id);}

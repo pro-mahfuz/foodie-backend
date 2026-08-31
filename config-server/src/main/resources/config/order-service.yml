@@ -1,0 +1,11 @@
+server:
+  port: ${SERVER_PORT:8083}
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://order-db:3306/order_db?serverTimezone=UTC}
+    username: ${DB_USER:foodie}
+    password: ${DB_PASSWORD:foodie}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false

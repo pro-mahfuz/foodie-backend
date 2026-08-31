@@ -1,0 +1,11 @@
+server:
+  port: ${SERVER_PORT:8082}
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://food-db:3306/food_db?serverTimezone=UTC}
+    username: ${DB_USER:foodie}
+    password: ${DB_PASSWORD:foodie}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false

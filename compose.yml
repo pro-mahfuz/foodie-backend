@@ -1,29 +1,60 @@
 services:
-  mysql:
+  eureka-server:
+    build: {context: ., dockerfile: eureka-server/Dockerfile}
+    ports: ["8761:8761"]
+    environment:
+      EUREKA_HOSTNAME: eureka-server
+  config-server:
+    build: {context: ., dockerfile: config-server/Dockerfile}
+    ports: ["8888:8888"]
+    environment:
+      EUREKA_URL: http://eureka-server:8761/eureka/
+    depends_on: {eureka-server: {condition: service_started}}
+    restart: on-failure
+  user-db:
     image: mysql:8.4
-    ports:
-      - "3307:3306"
+    environment: {MYSQL_DATABASE: user_db, MYSQL_USER: foodie, MYSQL_PASSWORD: foodie, MYSQL_ROOT_PASSWORD: root-foodie}
+    volumes: [user-data:/var/lib/mysql]
+    healthcheck: &db-health {test: ["CMD", "mysqladmin", "ping", "-h", "localhost"], interval: 5s, timeout: 3s, retries: 20}
+  food-db:
+    image: mysql:8.4
+    environment: {MYSQL_DATABASE: food_db, MYSQL_USER: foodie, MYSQL_PASSWORD: foodie, MYSQL_ROOT_PASSWORD: root-foodie}
+    volumes: [food-data:/var/lib/mysql]
+    healthcheck: *db-health
+  order-db:
+    image: mysql:8.4
+    environment: {MYSQL_DATABASE: order_db, MYSQL_USER: foodie, MYSQL_PASSWORD: foodie, MYSQL_ROOT_PASSWORD: root-foodie}
+    volumes: [order-data:/var/lib/mysql]
+    healthcheck: *db-health
+  user-service:
+    build: {context: ., dockerfile: user-service/Dockerfile}
+    expose: ["8081"]
+    environment: {DB_URL: "jdbc:mysql://user-db:3306/user_db?serverTimezone=UTC", DB_USER: foodie, DB_PASSWORD: foodie, CONFIG_SERVER_URL: "http://config-server:8888", EUREKA_URL: "http://eureka-server:8761/eureka/"}
+    depends_on: {user-db: {condition: service_healthy}, config-server: {condition: service_started}}
+    restart: on-failure
+  food-service:
+    build: {context: ., dockerfile: food-service/Dockerfile}
+    expose: ["8082"]
+    environment: {DB_URL: "jdbc:mysql://food-db:3306/food_db?serverTimezone=UTC", DB_USER: foodie, DB_PASSWORD: foodie, CONFIG_SERVER_URL: "http://config-server:8888", EUREKA_URL: "http://eureka-server:8761/eureka/"}
+    depends_on: {food-db: {condition: service_healthy}, config-server: {condition: service_started}}
+    restart: on-failure
+  order-service:
+    build: {context: ., dockerfile: order-service/Dockerfile}
+    expose: ["8083"]
     environment:
-      MYSQL_DATABASE: foodie_db
-      MYSQL_USER: foodie
-      MYSQL_PASSWORD: foodie
-      MYSQL_ROOT_PASSWORD: root-foodie
-    volumes:
-      - mysql-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-  api:
-    build: .
-    ports: ["8080:8080"]
-    environment:
-      DB_URL: jdbc:mysql://mysql:3306/foodie_db?serverTimezone=UTC
+      DB_URL: "jdbc:mysql://order-db:3306/order_db?serverTimezone=UTC"
       DB_USER: foodie
       DB_PASSWORD: foodie
-    depends_on:
-      mysql:
-        condition: service_healthy
-volumes:
-  mysql-data:
+      CONFIG_SERVER_URL: http://config-server:8888
+      EUREKA_URL: http://eureka-server:8761/eureka/
+    depends_on: {order-db: {condition: service_healthy}, config-server: {condition: service_started}, user-service: {condition: service_started}, food-service: {condition: service_started}}
+    restart: on-failure
+  api-gateway:
+    build: {context: ., dockerfile: api-gateway/Dockerfile}
+    ports: ["8080:8080"]
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      EUREKA_URL: http://eureka-server:8761/eureka/
+    depends_on: {config-server: {condition: service_started}, user-service: {condition: service_started}, food-service: {condition: service_started}, order-service: {condition: service_started}}
+    restart: on-failure
+volumes: {user-data: {}, food-data: {}, order-data: {}}

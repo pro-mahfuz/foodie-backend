@@ -1,0 +1,31 @@
+server:
+  port: ${SERVER_PORT:8080}
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: user-service-users
+              uri: lb://user-service
+              predicates: [Path=/api/users/**]
+            - id: user-service-login
+              uri: lb://user-service
+              predicates: [Path=/api/login]
+            - id: food-service-restaurants
+              uri: lb://food-service
+              predicates: [Path=/api/restaurants/**]
+            - id: food-service-dishes
+              uri: lb://food-service
+              predicates: [Path=/api/dishes/**]
+            - id: order-service-orders
+              uri: lb://order-service
+              predicates: [Path=/api/orders/**]
+            - id: order-service-carts
+              uri: lb://order-service
+              predicates: [Path=/api/customers/*/cart/**]
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
