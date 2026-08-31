@@ -13,7 +13,9 @@ services:
       - "18761:8761"
       - "18888:8888"
     networks:
-      - jenkins
+      jenkins:
+        aliases:
+          - docker
 
   jenkins:
     build:
@@ -21,7 +23,7 @@ services:
       dockerfile: jenkins/Dockerfile
     restart: unless-stopped
     environment:
-      DOCKER_HOST: tcp://jenkins-docker:2376
+      DOCKER_HOST: tcp://docker:2376
       DOCKER_CERT_PATH: /certs/client
       DOCKER_TLS_VERIFY: "1"
     volumes:
