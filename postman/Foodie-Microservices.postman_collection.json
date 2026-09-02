@@ -1,0 +1,85 @@
+{
+  "info": {
+    "_postman_id": "b73c6243-b4db-4df2-91e5-4dd5b726b702",
+    "name": "Foodie Microservices",
+    "description": "Executable API contract for the Foodie API Gateway, Config Server, and Eureka Server. Run folders in order. Register User stores userId automatically; restaurantId=1 and dishId=1 reference the food-service seed data; Create Order stores orderId automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "configUrl", "value": "http://localhost:8888", "type": "string" },
+    { "key": "eurekaUrl", "value": "http://localhost:8761", "type": "string" },
+    { "key": "userId", "value": "1", "type": "string" },
+    { "key": "restaurantId", "value": "1", "type": "string" },
+    { "key": "dishId", "value": "1", "type": "string" },
+    { "key": "orderId", "value": "1", "type": "string" },
+    { "key": "email", "value": "foodie{{$timestamp}}@example.com", "type": "string" },
+    { "key": "password", "value": "password123", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Created', () => pm.response.to.have.status(201));", "const body = pm.response.json();", "if (body.customerId) pm.collectionVariables.set('userId', body.customerId);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Postman User\",\n  \"email\": \"{{email}}\",\n  \"phone\": \"+971501234567\",\n  \"address\": \"Dubai\",\n  \"password\": \"{{password}}\"\n}" },
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Successful login', () => pm.response.to.have.status(200));", "const body = pm.response.json();", "if (body.token) pm.collectionVariables.set('token', body.token);"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" }, "url": "{{baseUrl}}/api/login" }
+        },
+        { "name": "Get User", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/users/{{userId}}" } }
+      ]
+    },
+    {
+      "name": "Food",
+      "item": [
+        { "name": "List Restaurants", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/restaurants" } },
+        { "name": "Get Restaurant", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/restaurants/{{restaurantId}}" } },
+        { "name": "List Restaurant Dishes", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/restaurants/{{restaurantId}}/dishes" } },
+        { "name": "Get Dish", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/dishes/{{dishId}}" } }
+      ]
+    },
+    {
+      "name": "Cart",
+      "item": [
+        { "name": "Get Cart", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/customers/{{userId}}/cart" } },
+        { "name": "Add Cart Item", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"dishId\": {{dishId}},\n  \"quantity\": 2\n}" }, "url": "{{baseUrl}}/api/customers/{{userId}}/cart/items" } },
+        { "name": "Clear Cart", "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/api/customers/{{userId}}/cart" } }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create Order",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Created', () => pm.response.to.have.status(201));", "const body = pm.response.json();", "if (body.orderId) pm.collectionVariables.set('orderId', body.orderId);"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"customerId\": {{userId}},\n  \"restaurantId\": {{restaurantId}},\n  \"items\": [\n    {\n      \"dishId\": {{dishId}},\n      \"quantity\": 2\n    }\n  ]\n}" }, "url": "{{baseUrl}}/api/orders" }
+        },
+        { "name": "Get Order", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/orders/{{orderId}}" } }
+      ]
+    },
+    {
+      "name": "Infrastructure",
+      "item": [
+        { "name": "API Gateway Health", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/actuator/health" } },
+        { "name": "API Gateway Routes", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/actuator/gateway/routes" } },
+        { "name": "Config Server Health", "request": { "method": "GET", "header": [], "url": "{{configUrl}}/actuator/health" } },
+        { "name": "User Service Config", "request": { "method": "GET", "header": [], "url": "{{configUrl}}/user-service/default" } },
+        { "name": "Food Service Config", "request": { "method": "GET", "header": [], "url": "{{configUrl}}/food-service/default" } },
+        { "name": "Order Service Config", "request": { "method": "GET", "header": [], "url": "{{configUrl}}/order-service/default" } },
+        { "name": "API Gateway Config", "request": { "method": "GET", "header": [], "url": "{{configUrl}}/api-gateway/default" } },
+        { "name": "Eureka Dashboard", "request": { "method": "GET", "header": [], "url": "{{eurekaUrl}}/" } },
+        { "name": "Eureka Applications", "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{eurekaUrl}}/eureka/apps" } },
+        { "name": "Eureka Health", "request": { "method": "GET", "header": [], "url": "{{eurekaUrl}}/actuator/health" } }
+      ]
+    }
+  ]
+}

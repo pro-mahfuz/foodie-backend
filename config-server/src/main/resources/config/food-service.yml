@@ -6,6 +6,10 @@ spring:
     username: ${DB_USER:foodie}
     password: ${DB_PASSWORD:foodie}
   jpa:
+    defer-datasource-initialization: true
     hibernate:
       ddl-auto: update
     open-in-view: false
+  sql:
+    init:
+      mode: always
