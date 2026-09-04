@@ -1,0 +1,6 @@
+# Build the chosen module with Maven package first.
+# docker build -f Dockerfile.prebuilt --build-arg SERVICE=food-service -t foodie-backend-food-service .
+FROM eclipse-temurin:17-jre
+ARG SERVICE
+COPY ${SERVICE}/target/${SERVICE}-0.0.1-SNAPSHOT.jar /app.jar
+ENTRYPOINT ["java", "-jar", "/app.jar"]

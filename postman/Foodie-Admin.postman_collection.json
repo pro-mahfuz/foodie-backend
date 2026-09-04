@@ -1,0 +1,14 @@
+{
+  "info": {"name":"Foodie Admin Management","schema":"https://schema.getpostman.com/json/collection/v2.1.0/collection.json","description":"Set adminPassword, then run Login. Create requests capture IDs for subsequent edits. Writes require ADMIN; reads are public."},
+  "variable":[{"key":"baseUrl","value":"http://localhost:8080"},{"key":"adminEmail","value":"admin@gmail.com"},{"key":"adminPassword","value":""},{"key":"adminToken","value":""},{"key":"restaurantId","value":"1"},{"key":"dishId","value":"1"}],
+  "auth":{"type":"bearer","bearer":[{"key":"token","value":"{{adminToken}}","type":"string"}]},
+  "item":[
+    {"name":"Admin Login","request":{"auth":{"type":"noauth"},"method":"POST","url":"{{baseUrl}}/api/login","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"email\":\"{{adminEmail}}\",\"password\":\"{{adminPassword}}\"}"}},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.response.to.have.status(200);","const data = pm.response.json();","pm.expect(data.role).to.eql('ADMIN');","pm.collectionVariables.set('adminToken', data.token);"]}}]},
+    {"name":"Create Restaurant","request":{"method":"POST","url":"{{baseUrl}}/api/restaurants","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"name\":\"Admin Restaurant\",\"address\":\"Dubai\",\"phone\":\"+971501234567\",\"rating\":4.5}"}},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.response.to.have.status(201);","pm.collectionVariables.set('restaurantId', pm.response.json().restaurantId);"]}}]},
+    {"name":"Edit Restaurant","request":{"method":"PUT","url":"{{baseUrl}}/api/restaurants/{{restaurantId}}","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"name\":\"Updated Restaurant\",\"address\":\"Dubai\",\"phone\":\"+971501234567\",\"rating\":4.6}"}}},
+    {"name":"List Restaurants","request":{"method":"GET","url":"{{baseUrl}}/api/restaurants"}},
+    {"name":"Create Dish","request":{"method":"POST","url":"{{baseUrl}}/api/restaurants/{{restaurantId}}/dishes","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"name\":\"Burger\",\"description\":\"Grilled burger\",\"price\":25.00,\"category\":\"MAIN\"}"}},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.response.to.have.status(201);","pm.collectionVariables.set('dishId', pm.response.json().dishId);"]}}]},
+    {"name":"Edit Dish","request":{"method":"PUT","url":"{{baseUrl}}/api/restaurants/{{restaurantId}}/dishes/{{dishId}}","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"name\":\"Cheeseburger\",\"description\":\"Burger with cheese\",\"price\":28.00,\"category\":\"MAIN\"}"}}},
+    {"name":"List Restaurant Dishes","request":{"method":"GET","url":"{{baseUrl}}/api/restaurants/{{restaurantId}}/dishes"}}
+  ]
+}

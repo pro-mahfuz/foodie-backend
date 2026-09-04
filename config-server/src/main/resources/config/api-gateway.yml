@@ -5,26 +5,181 @@ spring:
     gateway:
       server:
         webflux:
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            cors-configurations:
+              '[/**]':
+                allowed-origin-patterns:
+                  - "http://localhost:*"
+                  - "http://127.0.0.1:*"
+                allowed-methods:
+                  - GET
+                  - POST
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                allowed-headers:
+                  - "*"
+                allow-credentials: true
+                max-age: 3600
           routes:
-            - id: user-service-users
-              uri: lb://user-service
-              predicates: [Path=/api/users/**]
-            - id: user-service-login
-              uri: lb://user-service
-              predicates: [Path=/api/login]
-            - id: food-service-restaurants
-              uri: lb://food-service
-              predicates: [Path=/api/restaurants/**]
-            - id: food-service-dishes
-              uri: lb://food-service
-              predicates: [Path=/api/dishes/**]
-            - id: order-service-orders
+            - id: checkout-cart
               uri: lb://order-service
-              predicates: [Path=/api/orders/**]
-            - id: order-service-carts
+              predicates: ["Path=/api/customers/{id}/cart/checkout", "Method=POST"]
+              metadata:
+                requiredRole: CUSTOMER
+                requestModel: {headers: {Authorization: "Bearer <token>"}, path: {id: "authenticated customer ID"}, body: "none"}
+                responseModel:
+                  status: 201
+                  body: {orderId: long, customerId: long, restaurantId: long, orderDate: datetime, totalAmount: decimal, status: string, items: {type: array, element: {orderItemId: long, dishId: long, dishName: string, quantity: integer, price: decimal, subtotal: decimal}}}
+            - id: create-restaurant
+              uri: lb://food-service
+              predicates: ["Path=/api/restaurants", "Method=POST"]
+              metadata:
+                requiredRole: ADMIN
+                requestModel: {headers: {Authorization: "Bearer <token>"}, body: {name: string, address: string, phone: string, rating: decimal}}
+                responseModel: {status: 201, body: {restaurantId: long, name: string, address: string, phone: string, rating: decimal}}
+            - id: update-restaurant
+              uri: lb://food-service
+              predicates: ["Path=/api/restaurants/{id}", "Method=PUT"]
+              metadata:
+                requiredRole: ADMIN
+                requestModel: {headers: {Authorization: "Bearer <token>"}, path: {id: long}, body: {name: string, address: string, phone: string, rating: decimal}}
+                responseModel: {status: 200, body: {restaurantId: long, name: string, address: string, phone: string, rating: decimal}}
+            - id: create-restaurant-dish
+              uri: lb://food-service
+              predicates: ["Path=/api/restaurants/{id}/dishes", "Method=POST"]
+              metadata:
+                requiredRole: ADMIN
+                requestModel: {headers: {Authorization: "Bearer <token>"}, path: {id: long}, body: {name: string, description: string, price: decimal, category: string}}
+                responseModel: {status: 201, body: {dishId: long, restaurantId: long, name: string, description: string, price: decimal, category: string}}
+            - id: update-restaurant-dish
+              uri: lb://food-service
+              predicates: ["Path=/api/restaurants/{id}/dishes/{dishId}", "Method=PUT"]
+              metadata:
+                requiredRole: ADMIN
+                requestModel: {headers: {Authorization: "Bearer <token>"}, path: {id: long, dishId: long}, body: {name: string, description: string, price: decimal, category: string}}
+                responseModel: {status: 200, body: {dishId: long, restaurantId: long, name: string, description: string, price: decimal, category: string}}
+            - id: register-user
+              uri: lb://user-service
+              predicates:
+                - Path=/api/users
+                - Method=POST
+              metadata:
+                requestModel: {body: {name: string, email: string, phone: string, address: string, password: string, role: "ADMIN | CUSTOMER | RESTAURANT_MANAGER (optional; default CUSTOMER)"}}
+                responseModel: {status: 201, body: {customerId: long, name: string, email: string, phone: string, address: string, role: "ADMIN | CUSTOMER | RESTAURANT_MANAGER"}}
+            - id: get-user
+              uri: lb://user-service
+              predicates:
+                - Path=/api/users/{id}
+                - Method=GET
+              metadata:
+                requestModel: {path: {id: long}}
+                responseModel: {status: 200, body: {customerId: long, name: string, email: string, phone: string, address: string, role: "ADMIN | CUSTOMER | RESTAURANT_MANAGER"}}
+            - id: login-user
+              uri: lb://user-service
+              predicates:
+                - Path=/api/login
+                - Method=POST
+              metadata:
+                requestModel: {body: {email: string, password: string}}
+                responseModel: {status: 200, body: {customerId: long, token: string, tokenType: string, role: "ADMIN | CUSTOMER | RESTAURANT_MANAGER"}}
+            - id: list-restaurants
+              uri: lb://food-service
+              predicates:
+                - Path=/api/restaurants
+                - Method=GET
+              metadata:
+                requestModel: {none: true}
+                responseModel: {status: 200, body: [{restaurantId: long, name: string, address: string, phone: string, rating: decimal}]}
+            - id: get-restaurant
+              uri: lb://food-service
+              predicates:
+                - Path=/api/restaurants/{id}
+                - Method=GET
+              metadata:
+                requestModel: {path: {id: long}}
+                responseModel: {status: 200, body: {restaurantId: long, name: string, address: string, phone: string, rating: decimal}}
+            - id: list-restaurant-dishes
+              uri: lb://food-service
+              predicates:
+                - Path=/api/restaurants/{id}/dishes
+                - Method=GET
+              metadata:
+                requestModel: {path: {id: long}}
+                responseModel: {status: 200, body: [{dishId: long, restaurantId: long, name: string, description: string, price: decimal, category: string}]}
+            - id: get-dish
+              uri: lb://food-service
+              predicates:
+                - Path=/api/dishes/{id}
+                - Method=GET
+              metadata:
+                requestModel: {path: {id: long}}
+                responseModel: {status: 200, body: {dishId: long, restaurantId: long, name: string, description: string, price: decimal, category: string}}
+            - id: create-order
               uri: lb://order-service
-              predicates: [Path=/api/customers/*/cart/**]
+              predicates:
+                - Path=/api/orders
+                - Method=POST
+              metadata:
+                requiredRole: CUSTOMER
+                authorization: "Bearer token required; own customer data only"
+                requestModel:
+                  body: {customerId: long, restaurantId: long, items: [{dishId: long, quantity: integer}]}
+                responseModel:
+                  status: 201
+                  body: {orderId: long, customerId: long, restaurantId: long, orderDate: datetime, totalAmount: decimal, status: string, items: [{orderItemId: long, dishId: long, dishName: string, quantity: integer, price: decimal, subtotal: decimal}]}
+            - id: get-order
+              uri: lb://order-service
+              predicates:
+                - Path=/api/orders/{id}
+                - Method=GET
+              metadata:
+                requiredRole: CUSTOMER
+                authorization: "Bearer token required; own customer data only"
+                requestModel: {path: {id: long}}
+                responseModel:
+                  status: 200
+                  body: {orderId: long, customerId: long, restaurantId: long, orderDate: datetime, totalAmount: decimal, status: string, items: [{orderItemId: long, dishId: long, dishName: string, quantity: integer, price: decimal, subtotal: decimal}]}
+            - id: get-cart
+              uri: lb://order-service
+              predicates:
+                - Path=/api/customers/{id}/cart
+                - Method=GET
+              metadata:
+                requiredRole: CUSTOMER
+                authorization: "Bearer token required; own customer data only"
+                requestModel: {path: {id: long}}
+                responseModel:
+                  status: 200
+                  body: {customerId: long, items: [{dishId: long, dishName: string, quantity: integer, unitPrice: decimal, subtotal: decimal}], total: decimal}
+            - id: add-cart-item
+              uri: lb://order-service
+              predicates:
+                - Path=/api/customers/{id}/cart/items
+                - Method=POST
+              metadata:
+                requiredRole: CUSTOMER
+                authorization: "Bearer token required; own customer data only"
+                requestModel: {path: {id: long}, body: {dishId: long, quantity: integer}}
+                responseModel:
+                  status: 200
+                  body: {customerId: long, items: [{dishId: long, dishName: string, quantity: integer, unitPrice: decimal, subtotal: decimal}], total: decimal}
+            - id: clear-cart
+              uri: lb://order-service
+              predicates:
+                - Path=/api/customers/{id}/cart
+                - Method=DELETE
+              metadata:
+                requiredRole: CUSTOMER
+                authorization: "Bearer token required; own customer data only"
+                requestModel: {path: {id: long}}
+                responseModel: {status: 204, body: null}
 management:
+  endpoint:
+    gateway:
+      access: read-only
   endpoints:
     web:
       exposure:

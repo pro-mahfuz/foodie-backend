@@ -8,6 +8,7 @@ class Restaurant {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	Long restaurantId;
+    public Long getRestaurantId() { return restaurantId; }
 	@Column(nullable = false, length = 150)
 	String name;
 	@Column(nullable = false)

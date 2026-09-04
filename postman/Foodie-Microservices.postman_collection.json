@@ -14,7 +14,8 @@
     { "key": "dishId", "value": "1", "type": "string" },
     { "key": "orderId", "value": "1", "type": "string" },
     { "key": "email", "value": "foodie{{$timestamp}}@example.com", "type": "string" },
-    { "key": "password", "value": "password123", "type": "string" }
+    { "key": "password", "value": "password123", "type": "string" },
+    { "key": "role", "value": "CUSTOMER", "type": "string" }
   ],
   "item": [
     {
@@ -26,7 +27,7 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Postman User\",\n  \"email\": \"{{email}}\",\n  \"phone\": \"+971501234567\",\n  \"address\": \"Dubai\",\n  \"password\": \"{{password}}\"\n}" },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Postman User\",\n  \"email\": \"{{email}}\",\n  \"phone\": \"+971501234567\",\n  \"address\": \"Dubai\",\n  \"password\": \"{{password}}\",\n  \"role\": \"{{role}}\"\n}" },
             "url": "{{baseUrl}}/api/users"
           }
         },
@@ -49,14 +50,17 @@
     },
     {
       "name": "Cart",
+      "auth": {"type":"bearer","bearer":[{"key":"token","value":"{{token}}","type":"string"}]},
       "item": [
         { "name": "Get Cart", "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/customers/{{userId}}/cart" } },
         { "name": "Add Cart Item", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"dishId\": {{dishId}},\n  \"quantity\": 2\n}" }, "url": "{{baseUrl}}/api/customers/{{userId}}/cart/items" } },
+        { "name": "Checkout Cart", "request": { "method": "POST", "header": [], "url": "{{baseUrl}}/api/customers/{{userId}}/cart/checkout" } },
         { "name": "Clear Cart", "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/api/customers/{{userId}}/cart" } }
       ]
     },
     {
       "name": "Orders",
+      "auth": {"type":"bearer","bearer":[{"key":"token","value":"{{token}}","type":"string"}]},
       "item": [
         {
           "name": "Create Order",
