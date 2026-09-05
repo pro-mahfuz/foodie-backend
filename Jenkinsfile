@@ -1,89 +1,209 @@
 pipeline {
-  agent any
+    agent any
 
-  options {
-    disableConcurrentBuilds()
-    timestamps()
-  }
-
-  stages {
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
+    options {
+        skipDefaultCheckout(true)
+        timestamps()
     }
 
-    stage('Verify tools') {
-      steps {
-        sh '''
-          java -version
-          mvn -version
-          docker version
-          docker compose version
-        '''
-      }
+    environment {
+        JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+
+        COMPOSE_PROJECT_NAME = 'foodie-backend'
+        IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
-    stage('Test') {
-      steps {
-        sh 'mvn -B clean verify'
-      }
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Verify Tools') {
+            steps {
+                sh '''
+                    echo "======================================"
+                    echo " Environment"
+                    echo "======================================"
+
+                    echo "JAVA_HOME=${JAVA_HOME}"
+                    echo "PATH=${PATH}"
+
+                    echo ""
+                    echo "Java:"
+                    which java
+                    java -version
+
+                    echo ""
+                    echo "Javac:"
+                    which javac
+                    javac -version
+
+                    echo ""
+                    echo "Maven:"
+                    which mvn
+                    mvn -version
+
+                    echo ""
+                    echo "Docker:"
+                    docker version
+
+                    echo ""
+                    echo "Docker Compose:"
+                    docker compose version
+
+                    echo ""
+                    echo "Maven Toolchains:"
+                    cat ~/.m2/toolchains.xml 2>/dev/null || true
+                '''
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh '''
+                    echo "======================================"
+                    echo " Running Maven Tests"
+                    echo "======================================"
+
+                    mvn -B clean verify
+                '''
+            }
+        }
+
+        stage('Build Docker Images') {
+            steps {
+                sh '''
+                    echo "======================================"
+                    echo " Building Docker Images"
+                    echo " Build Number: ${BUILD_NUMBER}"
+                    echo "======================================"
+
+                    IMAGE_TAG=${BUILD_NUMBER} docker compose build
+                '''
+            }
+        }
+
+        stage('Stop Old Containers') {
+            steps {
+                sh '''
+                    echo "======================================"
+                    echo " Stopping Old Containers"
+                    echo "======================================"
+
+                    IMAGE_TAG=${BUILD_NUMBER} docker compose down \
+                        --remove-orphans || true
+                '''
+            }
+        }
+
+        stage('Deploy Containers') {
+            steps {
+                sh '''
+                    echo "======================================"
+                    echo " Deploying Containers"
+                    echo "======================================"
+
+                    IMAGE_TAG=${BUILD_NUMBER} docker compose up \
+                        -d \
+                        --no-build \
+                        --remove-orphans
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                    echo "======================================"
+                    echo " Waiting For Services"
+                    echo "======================================"
+
+                    sleep 10
+
+                    echo ""
+                    echo "Running containers:"
+                    docker compose ps
+
+                    echo ""
+                    echo "Docker containers:"
+                    docker ps
+
+                    echo ""
+                    echo "Checking failed/exited containers..."
+
+                    FAILED=$(docker compose ps \
+                        --status exited \
+                        --services || true)
+
+                    if [ -n "$FAILED" ]; then
+                        echo "ERROR: Some services have exited:"
+                        echo "$FAILED"
+
+                        docker compose logs \
+                            --tail=200
+
+                        exit 1
+                    fi
+
+                    echo ""
+                    echo "Deployment containers are running."
+                '''
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                sh '''
+                    echo "======================================"
+                    echo " Cleanup"
+                    echo "======================================"
+
+                    docker image prune -f
+                '''
+            }
+        }
     }
 
-    stage('Build Docker images') {
-      steps {
-        sh '''
-          docker compose build \
-            eureka-server \
-            config-server \
-            user-service \
-            food-service \
-            order-service \
-            api-gateway
-        '''
-      }
-    }
+    post {
 
-    stage('Deploy containers') {
-      when {
-        branch 'main'
-      }
-      steps {
-        sh '''
-          docker compose up -d --remove-orphans
-          docker compose ps
-        '''
-      }
-    }
+        success {
+            echo "======================================"
+            echo "Deployment successful."
+            echo "Build: ${BUILD_NUMBER}"
+            echo "======================================"
 
-    stage('Verify deployment') {
-      when {
-        branch 'main'
-      }
-      steps {
-        sh '''
-          for attempt in $(seq 1 30); do
-            if curl --fail --silent \
-              http://localhost:8080/actuator/health; then
-              exit 0
-            fi
-            sleep 5
-          done
+            sh '''
+                docker compose ps
+            '''
+        }
 
-          docker compose logs --tail=200
-          exit 1
-        '''
-      }
-    }
-  }
+        failure {
+            echo "======================================"
+            echo "Build or deployment failed."
+            echo "Build: ${BUILD_NUMBER}"
+            echo "======================================"
 
-  post {
-    success {
-      echo 'Docker images built and containers deployed successfully.'
+            sh '''
+                echo ""
+                echo "Docker Compose status:"
+                docker compose ps || true
+
+                echo ""
+                echo "Docker containers:"
+                docker ps -a || true
+
+                echo ""
+                echo "Recent Docker Compose logs:"
+                docker compose logs --tail=200 || true
+            '''
+        }
+
+        always {
+            echo "Pipeline finished."
+        }
     }
-    failure {
-      sh 'docker compose ps || true'
-      echo 'Build or deployment failed.'
-    }
-  }
 }
