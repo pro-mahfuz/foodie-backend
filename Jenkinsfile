@@ -2,16 +2,13 @@ pipeline {
     agent any
 
     options {
-        skipDefaultCheckout(true)
         timestamps()
+        skipDefaultCheckout(true)
     }
 
     environment {
-        JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
-        PATH = "${JAVA_HOME}/bin:${env.PATH}"
-
-        COMPOSE_PROJECT_NAME = 'foodie-backend'
         IMAGE_TAG = "${BUILD_NUMBER}"
+        COMPOSE_PROJECT_NAME = "foodie-backend"
     }
 
     stages {
@@ -22,54 +19,15 @@ pipeline {
             }
         }
 
-        stage('Verify Tools') {
+        stage('Verify Docker') {
             steps {
                 sh '''
-                    echo "======================================"
-                    echo " Environment"
-                    echo "======================================"
-
-                    echo "JAVA_HOME=${JAVA_HOME}"
-                    echo "PATH=${PATH}"
-
-                    echo ""
-                    echo "Java:"
-                    which java
-                    java -version
-
-                    echo ""
-                    echo "Javac:"
-                    which javac
-                    javac -version
-
-                    echo ""
-                    echo "Maven:"
-                    which mvn
-                    mvn -version
-
-                    echo ""
                     echo "Docker:"
                     docker version
 
                     echo ""
                     echo "Docker Compose:"
                     docker compose version
-
-                    echo ""
-                    echo "Maven Toolchains:"
-                    cat ~/.m2/toolchains.xml 2>/dev/null || true
-                '''
-            }
-        }
-
-        stage('Test') {
-            steps {
-                sh '''
-                    echo "======================================"
-                    echo " Running Maven Tests"
-                    echo "======================================"
-
-                    mvn -B clean verify
                 '''
             }
         }
@@ -78,11 +36,11 @@ pipeline {
             steps {
                 sh '''
                     echo "======================================"
-                    echo " Building Docker Images"
-                    echo " Build Number: ${BUILD_NUMBER}"
+                    echo "Building Docker images"
+                    echo "Image tag: ${IMAGE_TAG}"
                     echo "======================================"
 
-                    IMAGE_TAG=${BUILD_NUMBER} docker compose build
+                    IMAGE_TAG=${IMAGE_TAG} docker compose build
                 '''
             }
         }
@@ -90,11 +48,9 @@ pipeline {
         stage('Stop Old Containers') {
             steps {
                 sh '''
-                    echo "======================================"
-                    echo " Stopping Old Containers"
-                    echo "======================================"
+                    echo "Stopping old containers..."
 
-                    IMAGE_TAG=${BUILD_NUMBER} docker compose down \
+                    IMAGE_TAG=${IMAGE_TAG} docker compose down \
                         --remove-orphans || true
                 '''
             }
@@ -103,11 +59,9 @@ pipeline {
         stage('Deploy Containers') {
             steps {
                 sh '''
-                    echo "======================================"
-                    echo " Deploying Containers"
-                    echo "======================================"
+                    echo "Starting containers with tag ${IMAGE_TAG}..."
 
-                    IMAGE_TAG=${BUILD_NUMBER} docker compose up \
+                    IMAGE_TAG=${IMAGE_TAG} docker compose up \
                         -d \
                         --no-build \
                         --remove-orphans
@@ -118,39 +72,37 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 sh '''
-                    echo "======================================"
-                    echo " Waiting For Services"
-                    echo "======================================"
-
-                    sleep 10
+                    echo "Waiting for services..."
+                    sleep 15
 
                     echo ""
-                    echo "Running containers:"
-                    docker compose ps
+                    echo "======================================"
+                    echo "Docker Compose"
+                    echo "======================================"
+
+                    IMAGE_TAG=${IMAGE_TAG} docker compose ps
 
                     echo ""
-                    echo "Docker containers:"
+                    echo "======================================"
+                    echo "Running Containers"
+                    echo "======================================"
+
                     docker ps
 
                     echo ""
-                    echo "Checking failed/exited containers..."
+                    echo "======================================"
+                    echo "API Gateway"
+                    echo "======================================"
 
-                    FAILED=$(docker compose ps \
-                        --status exited \
-                        --services || true)
-
-                    if [ -n "$FAILED" ]; then
-                        echo "ERROR: Some services have exited:"
-                        echo "$FAILED"
-
-                        docker compose logs \
-                            --tail=200
-
-                        exit 1
-                    fi
-
-                    echo ""
-                    echo "Deployment containers are running."
+                    curl --fail \
+                        --retry 10 \
+                        --retry-delay 3 \
+                        http://127.0.0.1:8080 || {
+                            echo "API Gateway is not responding."
+                            IMAGE_TAG=${IMAGE_TAG} docker compose logs \
+                                --tail=200 api-gateway
+                            exit 1
+                        }
                 '''
             }
         }
@@ -158,10 +110,6 @@ pipeline {
         stage('Cleanup') {
             steps {
                 sh '''
-                    echo "======================================"
-                    echo " Cleanup"
-                    echo "======================================"
-
                     docker image prune -f
                 '''
             }
@@ -171,39 +119,25 @@ pipeline {
     post {
 
         success {
-            echo "======================================"
-            echo "Deployment successful."
-            echo "Build: ${BUILD_NUMBER}"
-            echo "======================================"
+            echo "foodie-backend build #${BUILD_NUMBER} deployed successfully."
 
             sh '''
-                docker compose ps
+                IMAGE_TAG=${IMAGE_TAG} docker compose ps
             '''
         }
 
         failure {
-            echo "======================================"
-            echo "Build or deployment failed."
-            echo "Build: ${BUILD_NUMBER}"
-            echo "======================================"
+            echo "foodie-backend build #${BUILD_NUMBER} failed."
 
             sh '''
-                echo ""
-                echo "Docker Compose status:"
-                docker compose ps || true
-
-                echo ""
-                echo "Docker containers:"
+                echo "=== Containers ==="
                 docker ps -a || true
 
                 echo ""
-                echo "Recent Docker Compose logs:"
-                docker compose logs --tail=200 || true
+                echo "=== Compose logs ==="
+                IMAGE_TAG=${IMAGE_TAG} docker compose logs \
+                    --tail=300 || true
             '''
-        }
-
-        always {
-            echo "Pipeline finished."
         }
     }
 }
