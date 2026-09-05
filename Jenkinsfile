@@ -97,7 +97,7 @@ pipeline {
                     curl --fail \
                         --retry 10 \
                         --retry-delay 3 \
-                        http://127.0.0.1:8080 || {
+                        http://127.0.0.1:8084 || {
                             echo "API Gateway is not responding."
                             IMAGE_TAG=${IMAGE_TAG} docker compose logs \
                                 --tail=200 api-gateway
