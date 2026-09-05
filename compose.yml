@@ -209,7 +209,7 @@ services:
     container_name: foodie-api-gateway
 
     ports:
-      - "8080:8080"
+      - "8084:8084"
 
     environment:
       CONFIG_SERVER_URL: http://config-server:8888
