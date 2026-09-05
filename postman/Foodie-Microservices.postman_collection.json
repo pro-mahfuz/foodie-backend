@@ -6,7 +6,7 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "baseUrl", "value": "http://72.61.114.40:8084", "type": "string" },
     { "key": "configUrl", "value": "http://localhost:8888", "type": "string" },
     { "key": "eurekaUrl", "value": "http://localhost:8761", "type": "string" },
     { "key": "userId", "value": "1", "type": "string" },

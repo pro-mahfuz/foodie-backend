@@ -7,7 +7,7 @@ Three independently deployable domain services, each owning its own MySQL databa
 | user-service | 8081 | user_db | registration, login, customer lookup |
 | food-service | 8082 | food_db | restaurants and dishes |
 | order-service | 8083 | order_db | persistent carts and orders |
-| api-gateway | 8080 | none | public API routing |
+| api-gateway | 8084 | none | public API routing |
 | config-server | 8888 | none | centralized service configuration |
 | eureka-server | 8761 | none | service registry and discovery dashboard |
 
@@ -17,13 +17,13 @@ Three independently deployable domain services, each owning its own MySQL databa
 docker compose up --build
 ```
 
-The public API is available through the gateway at `http://localhost:8080/api`. Domain-service ports are internal to the Compose network. Build all modules locally with `mvn clean verify`. Service URLs and database credentials can be overridden with the environment variables in `compose.yml`.
+The public API is available through the gateway at `http://72.61.114.40:8084/api`. Domain-service ports are internal to the Compose network. Build all modules locally with `mvn clean verify`. Service URLs and database credentials can be overridden with the environment variables in `compose.yml`.
 
 Infrastructure endpoints:
 
 - Eureka dashboard: `http://localhost:8761`
 - Config Server: `http://localhost:8888/{application}/{profile}`
-- Gateway health: `http://localhost:8080/actuator/health`
+- Gateway health: `http://72.61.114.40:8084/actuator/health`
 
 Centralized configuration files are under `config-server/src/main/resources/config`. The gateway and order service resolve domain services through Eureka using logical names such as `lb://user-service` instead of fixed container addresses.
 

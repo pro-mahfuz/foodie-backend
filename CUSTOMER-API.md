@@ -1,6 +1,6 @@
 # Customer cart and ordering
 
-Base URL: http://localhost:8080
+Base URL: http://72.61.114.40:8084
 
 1. POST /api/login with email and password; retain the returned customerId and token.
 2. Send Authorization: Bearer <token> on every cart/order call. Only CUSTOMER sessions may use these endpoints, for their own account.

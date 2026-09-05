@@ -1,6 +1,6 @@
 {
   "info": {"name":"Foodie Admin Management","schema":"https://schema.getpostman.com/json/collection/v2.1.0/collection.json","description":"Set adminPassword, then run Login. Create requests capture IDs for subsequent edits. Writes require ADMIN; reads are public."},
-  "variable":[{"key":"baseUrl","value":"http://localhost:8080"},{"key":"adminEmail","value":"admin@gmail.com"},{"key":"adminPassword","value":""},{"key":"adminToken","value":""},{"key":"restaurantId","value":"1"},{"key":"dishId","value":"1"}],
+  "variable":[{"key":"baseUrl","value":"http://72.61.114.40:8084"},{"key":"adminEmail","value":"admin@gmail.com"},{"key":"adminPassword","value":""},{"key":"adminToken","value":""},{"key":"restaurantId","value":"1"},{"key":"dishId","value":"1"}],
   "auth":{"type":"bearer","bearer":[{"key":"token","value":"{{adminToken}}","type":"string"}]},
   "item":[
     {"name":"Admin Login","request":{"auth":{"type":"noauth"},"method":"POST","url":"{{baseUrl}}/api/login","header":[{"key":"Content-Type","value":"application/json"}],"body":{"mode":"raw","raw":"{\"email\":\"{{adminEmail}}\",\"password\":\"{{adminPassword}}\"}"}},"event":[{"listen":"test","script":{"type":"text/javascript","exec":["pm.response.to.have.status(200);","const data = pm.response.json();","pm.expect(data.role).to.eql('ADMIN');","pm.collectionVariables.set('adminToken', data.token);"]}}]},

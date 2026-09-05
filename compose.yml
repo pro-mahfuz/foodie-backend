@@ -29,7 +29,7 @@ services:
       - "8888:8888"
 
     environment:
-      EUREKA_URL: http://eureka-server:8761/eureka/
+      EUREKA_URL: http://72.61.114.40:8761/eureka/
 
     depends_on:
       eureka-server:
@@ -133,8 +133,8 @@ services:
       DB_URL: jdbc:mysql://user-db:3306/user_db?serverTimezone=UTC
       DB_USER: foodie
       DB_PASSWORD: foodie
-      CONFIG_SERVER_URL: http://config-server:8888
-      EUREKA_URL: http://eureka-server:8761/eureka/
+      CONFIG_SERVER_URL: http://72.61.114.40:8888
+      EUREKA_URL: http://72.61.114.40:8761/eureka/
 
     depends_on:
       user-db:
@@ -159,8 +159,8 @@ services:
       DB_URL: jdbc:mysql://food-db:3306/food_db?serverTimezone=UTC
       DB_USER: foodie
       DB_PASSWORD: foodie
-      CONFIG_SERVER_URL: http://config-server:8888
-      EUREKA_URL: http://eureka-server:8761/eureka/
+      CONFIG_SERVER_URL: http://72.61.114.40:8888
+      EUREKA_URL: http://72.61.114.40:8761/eureka/
 
     depends_on:
       food-db:
@@ -185,8 +185,8 @@ services:
       DB_URL: jdbc:mysql://order-db:3306/order_db?serverTimezone=UTC
       DB_USER: foodie
       DB_PASSWORD: foodie
-      CONFIG_SERVER_URL: http://config-server:8888
-      EUREKA_URL: http://eureka-server:8761/eureka/
+      CONFIG_SERVER_URL: http://72.61.114.40:8888
+      EUREKA_URL: http://72.61.114.40:8761/eureka/
 
     depends_on:
       order-db:
@@ -213,7 +213,7 @@ services:
 
     environment:
       CONFIG_SERVER_URL: http://config-server:8888
-      EUREKA_URL: http://eureka-server:8761/eureka/
+      EUREKA_URL: http://72.61.114.40:8761/eureka/
 
     depends_on:
       config-server:

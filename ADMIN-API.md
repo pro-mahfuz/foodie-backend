@@ -1,6 +1,6 @@
 # Admin restaurant and dish management
 
-Log in with `POST http://localhost:8080/api/login` using the existing admin email/password.
+Log in with `POST http://72.61.114.40:8084/api/login` using the existing admin email/password.
 Send the returned token as `Authorization: Bearer <token>` on writes. Old demo tokens no longer work.
 Sessions expire after eight hours and are invalidated when user-service restarts.
 Public registration defaults to CUSTOMER; creating ADMIN or RESTAURANT_MANAGER accounts requires an admin token.
